@@ -70,3 +70,55 @@ class TestWandBLogger:
         with patch("src.tracking.wandb_logger.WANDB_AVAILABLE", False):
             wl = WandBLogger(project="test", config={}, rank=0, enabled=True)
             assert wl.enabled is False
+
+    @patch("src.tracking.wandb_logger.WANDB_AVAILABLE", True)
+    @patch("src.tracking.wandb_logger.wandb")
+    def test_log_system_metrics_disabled(self, mock_wandb):
+        """log_system_metrics is a no-op when disabled."""
+        wl = WandBLogger(project="test", config={}, rank=1, enabled=True)
+        wl.log_system_metrics()
+        mock_wandb.log.assert_not_called()
+
+    @patch("src.tracking.wandb_logger.WANDB_AVAILABLE", True)
+    @patch("src.tracking.wandb_logger.wandb")
+    def test_log_artifact_disabled(self, mock_wandb):
+        """log_artifact is a no-op when disabled."""
+        wl = WandBLogger(project="test", config={}, rank=1, enabled=True)
+        wl.log_artifact("/path", "name", "model")
+        mock_wandb.Artifact.assert_not_called()
+
+    @patch("src.tracking.wandb_logger.WANDB_AVAILABLE", True)
+    @patch("src.tracking.wandb_logger.wandb")
+    def test_create_scaling_chart_disabled(self, mock_wandb):
+        """create_scaling_chart is a no-op when disabled."""
+        wl = WandBLogger(project="test", config={}, rank=1, enabled=True)
+        wl.create_scaling_chart([{"num_gpus": 1, "speedup": 1.0, "efficiency": 1.0}])
+        mock_wandb.Table.assert_not_called()
+
+    @patch("src.tracking.wandb_logger.WANDB_AVAILABLE", True)
+    @patch("src.tracking.wandb_logger.wandb")
+    def test_create_scaling_chart_enabled(self, mock_wandb):
+        """create_scaling_chart creates table and logs chart."""
+        mock_wandb.Settings.return_value = MagicMock()
+        mock_wandb.init.return_value = MagicMock()
+        mock_table = MagicMock()
+        mock_wandb.Table.return_value = mock_table
+        mock_wandb.plot.line.return_value = MagicMock()
+
+        wl = WandBLogger(project="test", config={}, rank=0, enabled=True)
+        wl.create_scaling_chart(
+            [
+                {"num_gpus": 1, "speedup": 1.0, "efficiency": 1.0},
+                {"num_gpus": 2, "speedup": 1.8, "efficiency": 0.9},
+            ]
+        )
+        assert mock_table.add_data.call_count == 2
+        mock_wandb.log.assert_called_once()
+
+    @patch("src.tracking.wandb_logger.WANDB_AVAILABLE", True)
+    @patch("src.tracking.wandb_logger.wandb")
+    def test_finish_disabled(self, mock_wandb):
+        """finish is a no-op when disabled."""
+        wl = WandBLogger(project="test", config={}, rank=1, enabled=True)
+        wl.finish()
+        mock_wandb.finish.assert_not_called()

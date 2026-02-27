@@ -1,8 +1,10 @@
 """Tests for the main entry point."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
-from src.main import parse_args
+import pytest
+
+from src.main import main, parse_args
 
 
 class TestParseArgs:
@@ -33,3 +35,65 @@ class TestParseArgs:
         with patch("sys.argv", ["main", "--config", "custom.yaml"]):
             args = parse_args()
         assert args.config == "custom.yaml"
+
+
+class TestMain:
+    """Tests for the main() function."""
+
+    @patch("src.main.SingleGPUTrainer")
+    @patch("src.main.create_dataloader")
+    @patch("src.main.get_cifar100")
+    @patch("src.main.create_resnet50")
+    @patch("src.main.load_config")
+    def test_main_single_trainer(
+        self, mock_config, mock_model, mock_dataset, mock_loader, mock_trainer
+    ):
+        """main() creates SingleGPUTrainer for default args."""
+        cfg = MagicMock()
+        cfg.model.num_classes = 10
+        cfg.model.pretrained = False
+        cfg.data.root = "./data"
+        cfg.data.num_workers = 0
+        cfg.data.pin_memory = False
+        cfg.training.batch_size = 32
+        mock_config.return_value = cfg
+        mock_model.return_value = MagicMock()
+        mock_dataset.return_value = MagicMock()
+        mock_loader.return_value = MagicMock()
+
+        trainer_inst = MagicMock()
+        trainer_inst.train.return_value = {"history": [{"train_loss": 0.5}]}
+        mock_trainer.return_value = trainer_inst
+
+        with patch("sys.argv", ["main", "--config", "configs/training.yaml"]):
+            main()
+
+        mock_trainer.assert_called_once()
+        trainer_inst.train.assert_called_once()
+
+    @patch("src.main.SingleGPUTrainer")
+    @patch("src.main.create_dataloader")
+    @patch("src.main.get_cifar100")
+    @patch("src.main.create_resnet50")
+    @patch("src.main.load_config")
+    def test_main_unsupported_trainer(
+        self, mock_config, mock_model, mock_dataset, mock_loader, mock_trainer
+    ):
+        """main() raises NotImplementedError for horovod trainer."""
+        cfg = MagicMock()
+        cfg.model.num_classes = 10
+        cfg.model.pretrained = False
+        cfg.data.root = "./data"
+        cfg.data.num_workers = 0
+        cfg.data.pin_memory = False
+        cfg.training.batch_size = 32
+        mock_config.return_value = cfg
+        mock_model.return_value = MagicMock()
+        mock_dataset.return_value = MagicMock()
+        mock_loader.return_value = MagicMock()
+
+        with (
+            patch("sys.argv", ["main", "--trainer", "horovod"]),
+            pytest.raises(NotImplementedError, match="horovod"),
+        ):
+            main()
