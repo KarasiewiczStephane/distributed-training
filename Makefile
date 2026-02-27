@@ -1,4 +1,7 @@
-.PHONY: install test lint clean run train-ddp train-horovod docker
+IMAGE_NAME := $(shell basename $(CURDIR))
+
+.PHONY: install test lint clean run train-ddp train-horovod \
+        docker docker-gpu docker-ddp docker-benchmark
 
 install:
 	pip install -r requirements.txt
@@ -24,5 +27,14 @@ train-horovod:
 	horovodrun -np 2 python -m src.main --trainer horovod --config configs/training.yaml
 
 docker:
-	docker build -t $(shell basename $(CURDIR)) .
-	docker run -p 8000:8000 $(shell basename $(CURDIR))
+	docker build -t $(IMAGE_NAME) .
+
+docker-gpu:
+	docker build -t $(IMAGE_NAME) .
+	docker run --gpus all $(IMAGE_NAME)
+
+docker-ddp:
+	docker compose up trainer-ddp
+
+docker-benchmark:
+	docker compose up benchmark
