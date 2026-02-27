@@ -1,4 +1,4 @@
-.PHONY: install test lint clean run docker
+.PHONY: install test lint clean run train-ddp train-horovod docker
 
 install:
 	pip install -r requirements.txt
@@ -16,6 +16,12 @@ clean:
 
 run:
 	python -m src.main
+
+train-ddp:
+	torchrun --nproc_per_node=2 -m src.main --config configs/training.yaml --distributed
+
+train-horovod:
+	horovodrun -np 2 python -m src.main --trainer horovod --config configs/training.yaml
 
 docker:
 	docker build -t $(shell basename $(CURDIR)) .

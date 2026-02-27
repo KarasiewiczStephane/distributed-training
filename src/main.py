@@ -7,6 +7,7 @@ from src.data.dataset import get_cifar100
 from src.data.loader import create_dataloader
 from src.models.resnet import create_resnet50
 from src.training.base_trainer import SingleGPUTrainer
+from src.training.ddp_trainer import DDPTrainer
 from src.utils.config import load_config
 from src.utils.logger import setup_logging
 
@@ -77,11 +78,16 @@ def main() -> None:
 
     if trainer_type == "single":
         trainer = SingleGPUTrainer(model, train_loader, val_loader, config)
+    elif trainer_type == "ddp":
+        trainer = DDPTrainer(model, train_dataset, val_dataset, config)
     else:
         raise NotImplementedError(f"Trainer '{trainer_type}' not yet implemented")
 
     result = trainer.train()
     logger.info("Training complete. Final metrics: %s", result["history"][-1])
+
+    if trainer_type == "ddp":
+        trainer.cleanup()
 
 
 if __name__ == "__main__":
