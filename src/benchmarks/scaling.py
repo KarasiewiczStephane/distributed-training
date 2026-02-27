@@ -172,3 +172,123 @@ class ScalingBenchmark:
             logger.info("Report written to %s", output_path)
 
         return report
+
+
+@dataclass
+class ScalingBenchmarkSuite:
+    """End-to-end benchmark suite measuring scaling efficiency.
+
+    Runs training across multiple GPU counts, computes speedup and
+    efficiency, and generates markdown reports.
+
+    Args:
+        model_fn: Factory function to create the model.
+        dataset: Dataset to train on.
+        batch_size: Training batch size.
+        num_iterations: Iterations per benchmark run.
+    """
+
+    model_fn: Callable[[], nn.Module]
+    dataset: Dataset
+    batch_size: int = 64
+    num_iterations: int = 50
+    results: list[dict] = field(default_factory=list)
+
+    def _run_training(self, num_gpus: int) -> float:
+        """Run a single training benchmark and return elapsed time.
+
+        Args:
+            num_gpus: Number of GPUs (simulated on CPU).
+
+        Returns:
+            Elapsed time in seconds.
+        """
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = self.model_fn().to(device)
+        model.train()
+
+        dataloader = DataLoader(
+            self.dataset, batch_size=self.batch_size, drop_last=True
+        )
+        criterion = nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+
+        start = time.perf_counter()
+        for i, (inputs, targets) in enumerate(dataloader):
+            if i >= self.num_iterations:
+                break
+            inputs = inputs.to(device)
+            targets = targets.to(device)
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            loss.backward()
+            optimizer.step()
+        elapsed = time.perf_counter() - start
+        return elapsed
+
+    def run_scaling_benchmark(self, gpu_counts: list[int] | None = None) -> list[dict]:
+        """Run scaling benchmark across multiple GPU counts.
+
+        Args:
+            gpu_counts: List of GPU counts to test.
+
+        Returns:
+            List of result dicts with num_gpus, time, speedup, efficiency.
+        """
+        if gpu_counts is None:
+            gpu_counts = [1, 2, 4]
+
+        self.results = []
+        base_time = None
+
+        for n_gpus in gpu_counts:
+            time_taken = self._run_training(n_gpus)
+            if base_time is None:
+                base_time = time_taken
+            speedup = base_time / time_taken if time_taken > 0 else 0
+            efficiency = speedup / n_gpus
+
+            result = {
+                "num_gpus": n_gpus,
+                "time": time_taken,
+                "speedup": speedup,
+                "efficiency": efficiency,
+            }
+            self.results.append(result)
+            logger.info(
+                "Scaling %d GPU(s): %.2fs, speedup=%.2fx, eff=%.1f%%",
+                n_gpus,
+                time_taken,
+                speedup,
+                efficiency * 100,
+            )
+
+        return self.results
+
+    def generate_markdown_report(self, output_path: str | None = None) -> str:
+        """Generate a markdown report with scaling efficiency data.
+
+        Args:
+            output_path: Optional file path to write the report.
+
+        Returns:
+            Markdown report string.
+        """
+        report = "# Distributed Training Benchmark Results\n\n"
+        report += "## Scaling Efficiency\n\n"
+        report += "| GPUs | Time (s) | Speedup | Efficiency |\n"
+        report += "|------|----------|---------|------------|\n"
+
+        for r in self.results:
+            report += (
+                f"| {r['num_gpus']} | {r['time']:.2f} | "
+                f"{r['speedup']:.2f}x | {r['efficiency']:.1%} |\n"
+            )
+
+        if output_path:
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            Path(output_path).write_text(report)
+            logger.info("Scaling report written to %s", output_path)
+
+        return report
