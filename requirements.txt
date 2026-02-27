@@ -1,0 +1,26 @@
+# Deep Learning
+torch>=2.0
+torchvision>=0.15
+
+# Distributed Training
+horovod>=0.28
+
+# Hyperparameter Optimization
+ray[tune]>=2.5
+optuna>=3.0
+
+# Experiment Tracking
+wandb>=0.15
+
+# Configuration
+pyyaml>=6.0
+omegaconf>=2.3
+
+# Dev
+pytest>=7.0
+pytest-cov>=4.0
+ruff>=0.1
+pre-commit>=3.0
+
+# Utilities
+python-dotenv>=1.0

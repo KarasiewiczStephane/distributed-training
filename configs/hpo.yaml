@@ -1,0 +1,6 @@
+hpo:
+  num_samples: 50
+  max_epochs: 100
+  grace_period: 10
+  gpus_per_trial: 1
+  search_algorithm: bayesian
