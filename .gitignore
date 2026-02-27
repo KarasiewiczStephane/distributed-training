@@ -35,5 +35,10 @@ Thumbs.db
 # Logs
 *.log
 
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+
 # Task Master (keep local)
 .taskmaster/
