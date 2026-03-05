@@ -3,7 +3,7 @@ torch>=2.0
 torchvision>=0.15
 
 # Distributed Training
-horovod>=0.28
+# horovod>=0.28  # Optional: requires CMake 3.13+, MPI, and system libs. Install separately if needed.
 
 # Hyperparameter Optimization
 ray[tune]>=2.5
