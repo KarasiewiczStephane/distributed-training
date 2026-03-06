@@ -1,6 +1,6 @@
 IMAGE_NAME := $(shell basename $(CURDIR))
 
-.PHONY: install test lint clean run train-ddp train-horovod \
+.PHONY: install test lint clean run dashboard train-ddp train-horovod \
         docker docker-gpu docker-ddp docker-benchmark
 
 install:
@@ -19,6 +19,9 @@ clean:
 
 run:
 	python -m src.main
+
+dashboard:
+	streamlit run src/dashboard/app.py
 
 train-ddp:
 	torchrun --nproc_per_node=2 -m src.main --config configs/training.yaml --distributed

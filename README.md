@@ -33,6 +33,8 @@ distributed-training/
 │   │   └── ray_tune_search.py  # HPORunner with ASHA + Optuna
 │   ├── tracking/
 │   │   └── wandb_logger.py     # Rank-aware W&B logger
+│   ├── dashboard/
+│   │   └── app.py              # Streamlit training dashboard
 │   ├── benchmarks/
 │   │   ├── scaling.py          # Scaling benchmark suite
 │   │   ├── data_loading.py     # DataLoader worker benchmark
@@ -59,21 +61,35 @@ distributed-training/
 ## Quick Start
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# 1. Install dependencies
+make install
+# or: pip install -r requirements.txt
 
-# Single GPU training
+# 2. Train (CIFAR-100 downloads automatically on first run)
+python -m src.main --config configs/training.yaml
+
+# 3. Launch the dashboard (synthetic demo data, no training run required)
+make dashboard
+# or: streamlit run src/dashboard/app.py
+```
+
+### Training Options
+
+```bash
+# Single GPU training (default)
 python -m src.main --config configs/training.yaml
 
 # Multi-GPU DDP training (2 GPUs)
-torchrun --nproc_per_node=2 -m src.main --config configs/training.yaml --distributed
-
-# Horovod training (2 GPUs)
-horovodrun -np 2 python -m src.main --trainer horovod --config configs/training.yaml
+make train-ddp
+# or: torchrun --nproc_per_node=2 -m src.main --config configs/training.yaml --distributed
 
 # Run benchmarks
 python -m src.benchmarks.run_benchmark --gpus 1 2 4 --output reports/benchmark.md
 ```
+
+> **Note:** Horovod support is planned but not yet implemented in the main entry point.
+> The `horovod` package is also optional and commented out in `requirements.txt`
+> since it requires system-level dependencies (CMake, MPI).
 
 ## Docker
 
@@ -90,6 +106,23 @@ make docker-ddp
 # Run benchmarks in Docker
 make docker-benchmark
 ```
+
+## Dashboard
+
+The Streamlit dashboard visualizes training metrics, GPU scaling benchmarks,
+experiment comparisons, and resource utilization using synthetic demo data.
+No prior training run is required.
+
+```bash
+make dashboard
+```
+
+This opens the dashboard at `http://localhost:8501` with four sections:
+
+- **Training Loss Curves** -- loss, accuracy, validation loss, and learning rate schedule
+- **GPU Scaling Benchmark** -- speedup, throughput, and efficiency across GPU counts
+- **Experiment Comparison** -- side-by-side metrics for DDP, Horovod, and single-GPU runs
+- **Resource Utilization** -- simulated GPU, CPU, memory, and network gauges
 
 ## Configuration
 
