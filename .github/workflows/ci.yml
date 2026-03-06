@@ -35,6 +35,7 @@ jobs:
           pip install --upgrade pip
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
           pip install omegaconf pyyaml python-dotenv
+          pip install pandas numpy streamlit plotly
           pip install pytest pytest-cov
       - name: Run tests with coverage
         run: pytest tests/ -v --tb=short --cov=src --cov-report=xml --cov-report=term-missing
