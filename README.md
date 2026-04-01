@@ -1,6 +1,6 @@
 # Distributed Training Framework
 
-Multi-GPU training framework with PyTorch DDP, Horovod, Ray Tune HPO, and Weights & Biases tracking.
+> Multi-GPU training framework — PyTorch DDP, Horovod, Ray Tune hyperparameter optimization, and W&B experiment tracking.
 
 ## Features
 
@@ -208,6 +208,11 @@ GitHub Actions runs on every push/PR to `main`:
 1. **Lint** - `ruff check` and `ruff format --check`
 2. **Test** - Full test suite with 80% minimum coverage threshold
 3. **Coverage** - Report uploaded to Codecov
+
+
+## Author
+
+**Stéphane Karasiewicz** — [skarazdata.com](https://skarazdata.com) | [LinkedIn](https://www.linkedin.com/in/stephane-karasiewicz/)
 
 ## License
 
